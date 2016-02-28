@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kjetland.dropwizard.activemq.errors.JsonError;
 import io.dropwizard.lifecycle.Managed;
 import org.apache.activemq.ActiveMQMessageConsumer;
+import org.apache.activemq.command.ActiveMQBytesMessage;
 import org.apache.activemq.command.ActiveMQMapMessage;
 import org.apache.activemq.jms.pool.PooledMessageConsumer;
 import org.slf4j.Logger;
@@ -130,7 +131,19 @@ public class ActiveMQReceiverHandler<T> implements Managed, Runnable {
                 } else {
                     throw new Exception("We received a ActiveMQMapMessage-message, so you have to use receiverType = java.util.Map to receive it");
                 }
-            } else {
+            }
+            else if (message instanceof ActiveMQBytesMessage) {
+                ActiveMQBytesMessage m = (ActiveMQBytesMessage) message;
+                if (receiverType.equals(ActiveMQBytesMessage.class)) {
+                    // pass the string as is
+                    receiver.receive((T) m);
+                }
+                else {
+                    throw new Exception(
+                        "We received a ActiveMQBytesMessage-message, so you have to use receiverType = ActiveMQBytesMessage to receive it");
+                }
+            }
+            else {
                 throw new Exception("Do not know how to handle messages of type " + message.getClass());
             }
 

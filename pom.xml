@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.kjetland.dropwizard</groupId>
     <artifactId>dropwizard-activemq</artifactId>
-    <version>0.3.14-SNAPSHOT</version>
+    <version>0.3.13</version>
 
     <licenses>
-      <license>
-        <name>ASF v2 License</name>
-        <url>LICENSE.txt</url>
-        <distribution>repo</distribution>
-      </license>
+        <license>
+            <name>ASF v2 License</name>
+            <url>LICENSE.txt</url>
+            <distribution>repo</distribution>
+        </license>
     </licenses>
-    
+
     <properties>
         <dropwizard.version>0.9.1</dropwizard.version>
         <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
         <activemq.version>5.13.0</activemq.version>
         <mockito.version>1.9.5</mockito.version>
         <junit.version>4.11</junit.version>
+        <!-- github server corresponds to entry in ~/.m2/settings.xml -->
+        <github.global.server>github</github.global.server>
     </properties>
 
     <dependencies>
@@ -105,6 +106,39 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <altDeploymentRepository>internal.repo::default::file://${project.build.directory}/mvn-repo</altDeploymentRepository>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.11</version>
+                <configuration>
+                    <message>Maven artifacts for ${project.version}</message>  <!-- git commit message -->
+                    <noJekyll>true</noJekyll>                                  <!-- disable webpage processing -->
+                    <outputDirectory>${project.build.directory}/mvn-repo</outputDirectory> <!-- matches distribution management repository url above -->
+                    <branch>refs/heads/mvn-repo</branch>                       <!-- remote branch name -->
+                    <includes>
+                        <include>**/*</include>
+                    </includes>
+                    <repositoryName>dropwizard-activemq-bundle</repositoryName>      <!-- github repo name -->
+                    <repositoryOwner>baskin</repositoryOwner>    <!-- github username -->
+                </configuration>
+                <executions>
+                    <!-- run site-maven-plugin's 'site' target as part of 
+                        the build's normal 'deploy' phase -->
+                    <execution>
+                        <goals>
+                            <goal>site</goal>
+                        </goals>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -118,10 +152,9 @@
 
     <distributionManagement>
         <repository>
-            <id>mbk_mvn_repo</id>
-            <layout>default</layout>
-            <name>mbk_mvn_repo</name>
-            <url>file:///projects/git/mbknor.github.com/m2repo/releases</url>
+            <id>internal.repo</id>
+            <name>Temporary Staging Repository</name>
+            <url>file://${project.build.directory}/mvn-repo</url>
         </repository>
     </distributionManagement>
 
