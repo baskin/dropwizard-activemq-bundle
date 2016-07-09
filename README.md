@@ -103,9 +103,8 @@ Since this project is hosted on my own maven repo here on github, you also have 
 ```xml
 <repositories>
     <repository>
-        <id>mbknor</id>
-        <name>mbknor</name>
-        <url>https://raw.githubusercontent.com/mbknor/mbknor.github.com/master/m2repo/releases</url>
+        <id>dropwizard-activemq-bundle-mvn-repo</id>
+        <url>https://raw.github.com/baskin/dropwizard-activemq-bundle/mvn-repo</url>
     </repository>
 </repositories>
 ```
