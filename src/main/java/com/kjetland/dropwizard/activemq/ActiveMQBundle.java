@@ -70,10 +70,6 @@ public class ActiveMQBundle implements ConfiguredBundle<ActiveMQConfigHolder>, M
             return;
         }
 
-        if (poolConfig.maxConnections != null) {
-            connectionFactory.setMaxConnections(poolConfig.maxConnections);
-        }
-
         if (poolConfig.maximumActiveSessionPerConnection != null) {
             connectionFactory.setMaximumActiveSessionPerConnection(poolConfig.maximumActiveSessionPerConnection);
         }
@@ -88,6 +84,10 @@ public class ActiveMQBundle implements ConfiguredBundle<ActiveMQConfigHolder>, M
 
         if (poolConfig.expiryTimeoutMills != null) {
             connectionFactory.setExpiryTimeout(poolConfig.expiryTimeoutMills);
+        }
+
+        if (poolConfig.maxConnections != null) {
+            connectionFactory.setMaxConnections(poolConfig.maxConnections);
         }
 
         if (poolConfig.createConnectionOnStartup != null) {
