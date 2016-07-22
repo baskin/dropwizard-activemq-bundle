@@ -153,6 +153,32 @@ public class ActiveMQReceiverHandlerTest {
     }
 
     @Test
+    public void testNormalInstrumented() throws Exception {
+        setUpMocks(Arrays.asList(null, "a", "b", null, "d"));
+        ActiveMQReceiverHandler<String> h = new ActiveMQReceiverHandler<>(
+            destinationName,
+            connectionFactory,
+            (m)->receiveMessage((String)m),
+            String.class,
+            objectMapper,
+            (m,e) -> exceptionHandler(m,e),
+            1);
+
+        h.start();
+        h.initializeMeter("test");
+        Thread.sleep(100);
+        verify(connection, VerificationModeFactory.times(1)).start();
+        Thread.sleep(200);
+        assertTrue(receivedMessages.contains("a"));
+        assertTrue(receivedMessages.contains("b"));
+        assertTrue(receivedMessages.contains("d"));
+        assertEquals(3, receivedMessages.size());
+        assertTrue(receivedExceptions.size()==0);
+        h.stop();
+
+    }
+
+    @Test
     public void testExceptionInReceiver() throws Exception {
         setUpMocks(Arrays.asList(null, "a", THROW_EXCEPTION_IN_RECEIVER, "b", null, "d"));
         ActiveMQReceiverHandler<String> h = new ActiveMQReceiverHandler<>(

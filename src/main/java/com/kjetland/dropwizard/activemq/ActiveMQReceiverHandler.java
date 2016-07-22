@@ -1,9 +1,19 @@
 package com.kjetland.dropwizard.activemq;
 
-import com.codahale.metrics.health.HealthCheck;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kjetland.dropwizard.activemq.errors.JsonError;
-import io.dropwizard.lifecycle.Managed;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+
 import org.apache.activemq.ActiveMQMessageConsumer;
 import org.apache.activemq.command.ActiveMQBytesMessage;
 import org.apache.activemq.command.ActiveMQMapMessage;
@@ -11,14 +21,17 @@ import org.apache.activemq.jms.pool.PooledMessageConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.*;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.health.HealthCheck;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kjetland.dropwizard.activemq.errors.JsonError;
+import io.dropwizard.lifecycle.Managed;
 
 public class ActiveMQReceiverHandler<T> implements Managed, Runnable {
 
+    private static final MetricRegistry METRICS = SharedMetricRegistries.getOrCreate("default");
     static final Field pooledMessageConsumerDelegateField;
 
     static {
@@ -45,6 +58,7 @@ public class ActiveMQReceiverHandler<T> implements Managed, Runnable {
     protected final long shutdownWaitInSeconds;
 
     protected int errorsInARowCount = 0;
+    private  Meter eventReceivedMeter;
 
     public ActiveMQReceiverHandler(
             String destination,
@@ -103,6 +117,9 @@ public class ActiveMQReceiverHandler<T> implements Managed, Runnable {
     }
 
     private void processMessage(ActiveMQMessageConsumer messageConsumer, Message message) {
+        if(null != eventReceivedMeter){
+            eventReceivedMeter.mark();
+        }
         String json = null;
         try {
             // keep track of the correlationID of the message in the scope of processMessage()
@@ -296,6 +313,10 @@ public class ActiveMQReceiverHandler<T> implements Managed, Runnable {
                 }
             }
         };
+    }
+    
+    public void initializeMeter(String meterName) {
+        eventReceivedMeter = METRICS.meter(MetricRegistry.name(ActiveMQReceiverHandler.class,meterName));
     }
 
 }

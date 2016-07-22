@@ -150,6 +150,31 @@ public class ActiveMQBundle implements ConfiguredBundle<ActiveMQConfigHolder>, M
         internalRegisterReceiver(destination, handler);
     }
 
+    public <T> void registerInstrumentedReceiver(String destination, ActiveMQReceiver<T> receiver, Class<? extends T> clazz,
+        final boolean ackMessageOnException,String meterName) {
+
+        ActiveMQReceiverHandler<T> handler = new ActiveMQReceiverHandler<>(
+            destination,
+            connectionFactory,
+            receiver,
+            clazz,
+            objectMapper,
+            (message, exception) -> {
+                if (ackMessageOnException) {
+                    log.error("Error processing received message - acknowledging it anyway", exception);
+                    return true;
+                } else {
+                    log.error("Error processing received message - NOT acknowledging it", exception);
+                    return false;
+                }
+            },
+            shutdownWaitInSeconds
+        );
+        handler.initializeMeter(meterName);
+
+        internalRegisterReceiver(destination, handler);
+    }
+
     private <T> void internalRegisterReceiver(String destination, ActiveMQReceiverHandler<T> handler) {
         environment.lifecycle().manage(handler);
         environment.healthChecks().register("ActiveMQ receiver for " + destination, handler.getHealthCheck());
