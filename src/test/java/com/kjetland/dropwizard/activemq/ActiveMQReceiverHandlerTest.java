@@ -30,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.internal.verification.VerificationModeFactory;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -151,8 +152,9 @@ public class ActiveMQReceiverHandlerTest {
     public void testNormalInstrumented() throws Exception {
         setUpMocks(Arrays.asList(null, "a", "b", null, "d"));
         ActiveMQReceiverHandler<String> h = new ActiveMQReceiverHandler<>(destinationName, connectionFactory,
-                new InstrumentedReceiver((m) -> receiveMessage((String) m), "test"), String.class, objectMapper,
-                (m, e) -> exceptionHandler(m, e), 1);
+            new InstrumentedReceiver((m) -> receiveMessage((String) m),
+                SharedMetricRegistries.getOrCreate("default"), "test"), String.class, objectMapper,
+            (m, e) -> exceptionHandler(m, e), 1);
 
         h.start();
         Thread.sleep(100);

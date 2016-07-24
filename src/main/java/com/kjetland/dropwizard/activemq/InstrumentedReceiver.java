@@ -2,7 +2,6 @@ package com.kjetland.dropwizard.activemq;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
 
 /**
  * 
@@ -16,14 +15,12 @@ import com.codahale.metrics.SharedMetricRegistries;
  */
 public class InstrumentedReceiver<T> implements ActiveMQReceiver<T> {
 
-    private static final MetricRegistry METRICS = SharedMetricRegistries.getOrCreate("default");
-
     private ActiveMQReceiver<T> receiver;
     private Meter eventReceivedMeter;
 
-    public InstrumentedReceiver(ActiveMQReceiver<T> receiver, String meterName) {
+    public InstrumentedReceiver(ActiveMQReceiver<T> receiver, MetricRegistry metricRegistry, String meterName) {
         this.receiver = receiver;
-        this.eventReceivedMeter = METRICS.meter(meterName);
+        this.eventReceivedMeter = metricRegistry.meter(meterName);
     }
 
     public void receive(T message) {
