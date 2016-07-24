@@ -1,41 +1,37 @@
 package com.kjetland.dropwizard.activemq;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.activemq.ActiveMQMessageConsumer;
-import org.eclipse.jetty.util.ConcurrentHashSet;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.internal.verification.VerificationModeFactory;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.verification.VerificationMode;
-
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.MessageConsumer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.jms.Topic;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+import javax.jms.Topic;
+
+import org.apache.activemq.ActiveMQMessageConsumer;
+import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.internal.verification.VerificationModeFactory;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import com.codahale.metrics.SharedMetricRegistries;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ActiveMQReceiverHandlerTest {
@@ -150,6 +146,26 @@ public class ActiveMQReceiverHandlerTest {
         assertTrue(receivedExceptions.size()==0);
         h.stop();
 
+    }
+
+    @Test
+    public void testNormalInstrumented() throws Exception {
+        setUpMocks(Arrays.asList(null, "a", "b", null, "d"));
+        ActiveMQReceiverHandler<String> h = new ActiveMQReceiverHandler<>(destinationName, connectionFactory,
+            new InstrumentedReceiver((m) -> receiveMessage((String) m),
+                SharedMetricRegistries.getOrCreate("default"), "test"), String.class, objectMapper,
+            (m, e) -> exceptionHandler(m, e), 1);
+
+        h.start();
+        Thread.sleep(100);
+        verify(connection, VerificationModeFactory.times(1)).start();
+        Thread.sleep(200);
+        assertTrue(receivedMessages.contains("a"));
+        assertTrue(receivedMessages.contains("b"));
+        assertTrue(receivedMessages.contains("d"));
+        assertEquals(3, receivedMessages.size());
+        assertTrue(receivedExceptions.size() == 0);
+        h.stop();
     }
 
     @Test
